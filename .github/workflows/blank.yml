@@ -48,10 +48,13 @@ jobs:
       - name: Create /tmp/panel directory
         run: mkdir -p /tmp/panel
 
+      - name: Clone Pterodactyl Panel repository
+        run: |
+          git clone https://github.com/pterodactyl/panel.git /tmp/panel
+
       - name: Configure Pterodactyl Panel
         run: |
           cd /tmp/panel
-          git clone https://github.com/pterodactyl/panel.git .
           cp .env.example .env
           docker-compose build --pull
           docker-compose up -d
@@ -61,7 +64,6 @@ jobs:
 
       - name: Add Admin User
         run: |
-          cd /tmp/panel
           docker-compose exec -T panel php artisan p:user:make --email="shrpy18@gmail.com" --username="shrpy" --password="shrpy18@" --admin=1
 
       - name: Obtain Public IP
