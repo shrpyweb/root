@@ -1,4 +1,4 @@
-name: Deploy Pterodactyl Panel and Wings
+name: Deploy Pterodactyl Panel
 
 on:
   push:
