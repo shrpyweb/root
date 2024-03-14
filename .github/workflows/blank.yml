@@ -19,6 +19,7 @@ jobs:
       - name: Build Docker image
         run: docker build -t web-terminal .
 
+
       - name: Run Docker container
         run: docker run -d --name web-terminal -p 4200:4200 web-terminal
 
