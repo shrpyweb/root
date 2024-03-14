@@ -1,4 +1,4 @@
-name: Install Docker
+name: Install Docker and Pterodactyl
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  install-docker:
+  install-docker-and-pterodactyl:
     runs-on: ubuntu-latest
     
     steps:
@@ -34,9 +34,42 @@ jobs:
         run: |
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io
       
+      - name: Clone Pterodactyl repository
+        run: |
+          git clone https://github.com/pterodactyl/panel.git /tmp/panel
+      
+      - name: Set up Pterodactyl
+        run: |
+          cd /tmp/panel
+          chmod +x ./setup.sh
+          ./setup.sh
+          php artisan p:environment:setup \
+            --dbHost="localhost" \
+            --dbPort="3306" \
+            --dbName="pterodactyl" \
+            --dbUser="pterodactyl" \
+            --dbPass="pterodactyl" \
+            --dbPrefix="" \
+            --appUrl="http://example.com" \
+            --appTimezone="UTC" \
+            --appLocale="en" \
+            --queueDriver="sync" \
+            --cacheDriver="redis" \
+            --sessionDriver="redis" \
+            --mailDriver="smtp" \
+            --mailHost="smtp.mailtrap.io" \
+            --mailPort="2525" \
+            --mailUser="" \
+            --mailPass="" \
+            --mailFrom="mail@example.com" \
+            --mailEncryption="tls"
+          php artisan key:generate --force
+          php artisan migrate --seed --force
+          php artisan p:user:make --email="shrpy18@gmail.com" --username="shrpy" --password="shrpy18@" --admin=1
+      
       - name: Build and start Pterodactyl services
         run: |
-          cd /actual/path/to/pterodactyl
+          cd /tmp/panel
           docker-compose up -d
 
       - name: Wait for Pterodactyl services to start
@@ -55,9 +88,9 @@ jobs:
       - name: Access Pterodactyl panel
         run: |
           sleep 10
-          curl -I http://server-ip-address:8080
+          curl -I http://localhost:8080
 
       - name: Access Pterodactyl wings
         run: |
           sleep 10
-          curl -I http://server-ip-address:8081
+          curl -I http://localhost:8081
