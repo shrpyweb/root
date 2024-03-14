@@ -36,7 +36,7 @@ jobs:
       
       - name: Build and start Pterodactyl services
         run: |
-          cd /path/to/pterodactyl
+          cd /actual/path/to/pterodactyl
           docker-compose up -d
 
       - name: Wait for Pterodactyl services to start
