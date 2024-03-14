@@ -13,12 +13,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install Docker
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker.io docker-compose
-          sudo systemctl start docker
-          sudo systemctl enable docker
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+
+      - name: Add Docker's official GPG key
+        run: |
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+      - name: Add Docker repository
+        run: |
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+      - name: Update package index
+        run: |
+          sudo apt-get update
+
+      - name: Install Docker
+        run: |
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
       - name: Clone Pterodactyl Dockerized Panel
         run: |
