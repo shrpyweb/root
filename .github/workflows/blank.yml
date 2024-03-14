@@ -1,4 +1,4 @@
-name: Create VPS with Web Terminal
+name: Install Docker and Deploy Webpage
 
 on:
   push:
@@ -6,29 +6,55 @@ on:
       - main
 
 jobs:
-  build-and-run-container:
+  install-docker-and-deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+      
+      - name: Add Docker's official GPG key
+        run: |
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+      
+      - name: Add Docker repository
+        run: |
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+      
+      - name: Update package index
+        run: |
+          sudo apt-get update
+      
+      - name: Install Docker
+        run: |
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+      - name: Create index.html file
+        run: echo "<html><body><h1>Hello, world!</h1></body></html>" > index.html
+
+      - name: Create Dockerfile
+        run: echo "FROM nginx:latest\nCOPY index.html /usr/share/nginx/html/index.html" > Dockerfile
 
       - name: Build Docker image
-        run: docker build -t web-terminal .
-
+        run: docker build -t my-webpage .
 
       - name: Run Docker container
-        run: docker run -d --name web-terminal -p 4200:4200 web-terminal
+        run: docker run -d --name my-webpage -p 80:80 my-webpage
 
-      - name: Delay for container to start
-        run: sleep 10
-
-      - name: Obtain public IP and Display Wings Link
+      - name: Obtain public IP
         id: public_ip
         run: |
           apt-get update && apt-get install -y curl
           echo "::set-output name=ip::$(curl -s https://api.ipify.org)"
-          echo "Public Link: http://$(curl -s https://api.ipify.org):8081"
+
+      - name: Set Public IP as job output
+        id: set_public_ip
+        run: echo "::set-output name=public_ip::${{ steps.public_ip.outputs.ip }}"
+
+      - name: Display Webpage URL
+        run: echo "Webpage URL: http://${{ steps.public_ip.outputs.ip }}"
