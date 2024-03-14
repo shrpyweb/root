@@ -1,0 +1,45 @@
+name: Deploy Pterodactyl Panel and Wings
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Install Docker and Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io docker-compose
+      
+      - name: Build and start Pterodactyl services
+        run: |
+          cd /path/to/pterodactyl
+          docker-compose up -d
+
+      - name: Wait for Pterodactyl services to start
+        run: sleep 60
+      
+      - name: Check Pterodactyl panel status
+        run: curl -sI http://localhost:8080 | grep "200 OK"
+        retries: 5
+        retry-delay: 10
+      
+      - name: Check Pterodactyl wings status
+        run: curl -sI http://localhost:8081 | grep "200 OK"
+        retries: 5
+        retry-delay: 10
+
+      - name: Access Pterodactyl panel
+        run: |
+          curl -I http://server-ip-address:8080
+
+      - name: Access Pterodactyl wings
+        run: |
+          curl -I http://server-ip-address:8081
