@@ -1,4 +1,4 @@
-name: Install Docker and Pterodactyl
+name: Install Docker and Pterodactyl Panel
 
 on:
   push:
@@ -6,91 +6,43 @@ on:
       - main
 
 jobs:
-  install-docker-and-pterodactyl:
+  install-docker-and-panel:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-      
-      - name: Add Docker's official GPG key
-        run: |
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-      
-      - name: Add Docker repository
-        run: |
-          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-      
-      - name: Update package index
-        run: |
-          sudo apt-get update
-      
+
       - name: Install Docker
         run: |
-          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-      
-      - name: Clone Pterodactyl repository
+          sudo apt-get update
+          sudo apt-get install -y docker.io docker-compose
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      - name: Clone Pterodactyl Dockerized Panel
         run: |
           git clone https://github.com/pterodactyl/panel.git /tmp/panel
-      
-      - name: Set up Pterodactyl
+
+      - name: Configure Pterodactyl Panel
         run: |
           cd /tmp/panel
-          chmod +x ./setup.sh
-          ./setup.sh
-          php artisan p:environment:setup \
-            --dbHost="localhost" \
-            --dbPort="3306" \
-            --dbName="pterodactyl" \
-            --dbUser="pterodactyl" \
-            --dbPass="pterodactyl" \
-            --dbPrefix="" \
-            --appUrl="http://example.com" \
-            --appTimezone="UTC" \
-            --appLocale="en" \
-            --queueDriver="sync" \
-            --cacheDriver="redis" \
-            --sessionDriver="redis" \
-            --mailDriver="smtp" \
-            --mailHost="smtp.mailtrap.io" \
-            --mailPort="2525" \
-            --mailUser="" \
-            --mailPass="" \
-            --mailFrom="mail@example.com" \
-            --mailEncryption="tls"
-          php artisan key:generate --force
-          php artisan migrate --seed --force
-          php artisan p:user:make --email="shrpy18@gmail.com" --username="shrpy" --password="shrpy18@" --admin=1
-      
-      - name: Build and start Pterodactyl services
-        run: |
-          cd /tmp/panel
+          cp .env.example .env
+          docker-compose build --pull
           docker-compose up -d
 
-      - name: Wait for Pterodactyl services to start
+      - name: Wait for Pterodactyl Panel to Start
         run: sleep 60
-      
-      - name: Check Pterodactyl panel status
-        run: |
-          sleep 10
-          curl -sI http://localhost:8080 | grep "200 OK"
 
-      - name: Check Pterodactyl wings status
+      - name: Add Admin User
         run: |
-          sleep 10
-          curl -sI http://localhost:8081 | grep "200 OK"
+          docker-compose exec -T panel php artisan p:user:make --email="shrpy18@gmail.com" --username="shrpy" --password="shrpy18@" --admin=1
 
-      - name: Access Pterodactyl panel
-        run: |
-          sleep 10
-          curl -I http://localhost:8080
+      - name: Obtain Public IP
+        id: public_ip
+        run: echo "::set-output name=ip::$(curl -s ifconfig.me)"
 
-      - name: Access Pterodactyl wings
+      - name: Display Panel and Wings Links
         run: |
-          sleep 10
-          curl -I http://localhost:8081
+          echo "Panel Link: http://${{ steps.public_ip.outputs.ip }}:8080"
+          echo "Wings Link: http://${{ steps.public_ip.outputs.ip }}:8081"
