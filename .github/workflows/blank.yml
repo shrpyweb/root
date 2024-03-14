@@ -24,7 +24,9 @@ jobs:
 
       - name: Obtain container IP
         id: container_ip
-        run: echo "::set-output name=ip::$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' web-terminal)"
+        run: |
+            echo "::set-output name=ip::$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' web-terminal)"
+
 
       - name: Display Public IP
         run: echo "Public IP: ${{ steps.container_ip.outputs.ip }}"
