@@ -1,4 +1,4 @@
-name: Deploy Pterodactyl Panel
+name: Install Docker and Pterodactyl Panel
 
 on:
   push:
@@ -6,42 +6,68 @@ on:
       - main
 
 jobs:
-  deploy:
+  install-docker-and-panel:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      
-      - name: Install Docker and Docker Compose
+
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker.io docker-compose
-      
-      - name: Build and start Pterodactyl services
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+
+      - name: Add Docker's official GPG key
         run: |
-          cd /path/to/pterodactyl
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+      - name: Add Docker repository
+        run: |
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+      - name: Update package index
+        run: |
+          sudo apt-get update
+
+      - name: Install Docker
+        run: |
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+
+      - name: Remove conflicting package
+        run: |
+          sudo apt-get remove -y containerd
+
+      - name: Clear package cache and fix broken dependencies
+        run: |
+          sudo apt-get clean
+          sudo apt-get autoclean
+          sudo apt-get autoremove
+          sudo apt-get -f install
+
+      - name: Clone Pterodactyl Dockerized Panel
+        run: |
+          git clone https://github.com/pterodactyl/panel.git /tmp/panel
+
+      - name: Configure Pterodactyl Panel
+        run: |
+          cd /tmp/panel
+          cp .env.example .env
+          docker-compose build --pull
           docker-compose up -d
 
-      - name: Wait for Pterodactyl services to start
+      - name: Wait for Pterodactyl Panel to Start
         run: sleep 60
-      
-      - name: Check Pterodactyl panel status
-        run: |
-          sleep 10
-          curl -sI http://localhost:8080 | grep "200 OK"
 
-      - name: Check Pterodactyl wings status
+      - name: Add Admin User
         run: |
-          sleep 10
-          curl -sI http://localhost:8081 | grep "200 OK"
+          docker-compose exec -T panel php artisan p:user:make --email="shrpy18@gmail.com" --username="shrpy" --password="shrpy18@" --admin=1
 
-      - name: Access Pterodactyl panel
-        run: |
-          sleep 10
-          curl -I http://server-ip-address:8080
+      - name: Obtain Public IP
+        id: public_ip
+        run: echo "::set-output name=ip::$(curl -s ifconfig.me)"
 
-      - name: Access Pterodactyl wings
+      - name: Display Panel and Wings Links
         run: |
-          sleep 10
-          curl -I http://server-ip-address:8081
+          echo "Panel Link: http://${{ steps.public_ip.outputs.ip }}:8080"
+          echo "Wings Link: http://${{ steps.public_ip.outputs.ip }}:8081"
