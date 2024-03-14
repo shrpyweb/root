@@ -27,19 +27,21 @@ jobs:
         run: sleep 60
       
       - name: Check Pterodactyl panel status
-        run: curl -sI http://localhost:8080 | grep "200 OK"
-        retries: 5
-        retry-delay: 10
-      
+        run: |
+          sleep 10
+          curl -sI http://localhost:8080 | grep "200 OK"
+
       - name: Check Pterodactyl wings status
-        run: curl -sI http://localhost:8081 | grep "200 OK"
-        retries: 5
-        retry-delay: 10
+        run: |
+          sleep 10
+          curl -sI http://localhost:8081 | grep "200 OK"
 
       - name: Access Pterodactyl panel
         run: |
+          sleep 10
           curl -I http://server-ip-address:8080
 
       - name: Access Pterodactyl wings
         run: |
+          sleep 10
           curl -I http://server-ip-address:8081
