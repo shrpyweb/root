@@ -1,4 +1,4 @@
-name: Install Docker
+name: Deploy Pterodactyl Panel
 
 on:
   push:
@@ -6,30 +6,42 @@ on:
       - main
 
 jobs:
-  install-docker:
+  deploy:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
       
-      - name: Install dependencies
+      - name: Install Docker and Docker Compose
         run: |
           sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+          sudo apt-get install -y docker.io docker-compose
       
-      - name: Add Docker's official GPG key
+      - name: Build and start Pterodactyl services
         run: |
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          cd /path/to/pterodactyl
+          docker-compose up -d
+
+      - name: Wait for Pterodactyl services to start
+        run: sleep 60
       
-      - name: Add Docker repository
+      - name: Check Pterodactyl panel status
         run: |
-          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-      
-      - name: Update package index
+          sleep 10
+          curl -sI http://localhost:8080 | grep "200 OK"
+
+      - name: Check Pterodactyl wings status
         run: |
-          sudo apt-get update
-      
-      - name: Install Docker
+          sleep 10
+          curl -sI http://localhost:8081 | grep "200 OK"
+
+      - name: Access Pterodactyl panel
         run: |
-          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+          sleep 10
+          curl -I http://server-ip-address:8080
+
+      - name: Access Pterodactyl wings
+        run: |
+          sleep 10
+          curl -I http://server-ip-address:8081
