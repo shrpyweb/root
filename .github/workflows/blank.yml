@@ -38,9 +38,13 @@ jobs:
         run: |
           git clone https://github.com/pterodactyl/panel.git /tmp/panel
 
+      - name: Check cloned directory
+        run: |
+          ls -l /tmp/panel
+
       - name: Configure Pterodactyl Panel
         run: |
-          cd /tmp/panel
+          cd /tmp/panel/pterodactyl
           cp .env.example .env
           docker-compose build --pull
           docker-compose up -d
