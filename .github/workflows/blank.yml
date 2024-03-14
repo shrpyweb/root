@@ -1,4 +1,4 @@
-name: Install Docker and Pterodactyl Panel
+name: Create VPS with Web Terminal
 
 on:
   push:
@@ -6,82 +6,25 @@ on:
       - main
 
 jobs:
-  install-docker-and-panel:
+  build-and-run-container:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-      - name: Add Docker's official GPG key
-        run: |
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+      - name: Build Docker image
+        run: docker build -t web-terminal .
 
-      - name: Add Docker repository
-        run: |
-          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+      - name: Run Docker container
+        run: docker run -d --name web-terminal -p 4200:4200 web-terminal
 
-      - name: Update package index
-        run: |
-          sudo apt-get update
+      - name: Obtain container IP
+        id: container_ip
+        run: echo "::set-output name=ip::$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' web-terminal)"
 
-      - name: Install Docker
-        run: |
-          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-
-      - name: Remove conflicting package
-        run: |
-          sudo apt-get remove -y containerd
-
-      - name: Clear package cache and fix broken dependencies
-        run: |
-          sudo apt-get clean
-          sudo apt-get autoclean
-          sudo apt-get autoremove
-          sudo apt-get -f install
-
-      - name: Create /tmp/panel directory
-        run: mkdir -p /tmp/panel
-
-      - name: Clone Pterodactyl Panel repository
-        run: |
-          git clone https://github.com/pterodactyl/panel.git /tmp/panel
-
-      - name: Navigate to Pterodactyl Panel directory
-        run: cd /tmp/panel
-
-      - name: Check if docker-compose.yml exists
-        run: |
-          if [ -f docker-compose.yml ]; then
-            echo "docker-compose.yml found."
-          else
-            echo "Error: docker-compose.yml not found."
-            exit 1
-          fi
-
-      - name: Configure Pterodactyl Panel
-        run: |
-          cp .env.example .env
-          docker-compose build --pull
-          docker-compose up -d
-
-      - name: Wait for Pterodactyl Panel to Start
-        run: sleep 60
-
-      - name: Add Admin User
-        run: |
-          docker-compose exec -T panel php artisan p:user:make --email="shrpy18@gmail.com" --username="shrpy" --password="shrpy18@" --admin=1
-
-      - name: Obtain Public IP
-        id: public_ip
-        run: echo "::set-output name=ip::$(curl -s ifconfig.me)"
-
-      - name: Display Panel and Wings Links
-        run: |
-          echo "Panel Link: http://${{ steps.public_ip.outputs.ip }}:8080"
-          echo "Wings Link: http://${{ steps.public_ip.outputs.ip }}:8081"
+      - name: Display Public IP
+        run: echo "Public IP: ${{ steps.container_ip.outputs.ip }}"
