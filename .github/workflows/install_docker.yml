@@ -1,4 +1,4 @@
-name: Install Docker and Docker Compose
+name: Install Docker
 
 on:
   push:
@@ -6,19 +6,30 @@ on:
       - main
 
 jobs:
-  install:
+  install-docker:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
       
-      - name: Install Docker
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker.io
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
       
-      - name: Install Docker Compose
+      - name: Add Docker's official GPG key
         run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+      
+      - name: Add Docker repository
+        run: |
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+      
+      - name: Update package index
+        run: |
+          sudo apt-get update
+      
+      - name: Install Docker
+        run: |
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
