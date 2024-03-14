@@ -25,15 +25,9 @@ jobs:
       - name: Delay for container to start
         run: sleep 10
 
-      - name: Obtain public IP
+      - name: Obtain public IP and Display Wings Link
         id: public_ip
         run: |
           apt-get update && apt-get install -y curl
           echo "::set-output name=ip::$(curl -s https://api.ipify.org)"
-
-      - name: Set Public IP as job output
-        id: set_public_ip
-        run: echo "::set-output name=public_ip::${{ steps.public_ip.outputs.ip }}"
-
-      - name: Display Public IP
-        run: echo "Public IP: ${{ job.outputs.public_ip }}"
+          echo "Public Link: http://$(curl -s https://api.ipify.org):8081"
